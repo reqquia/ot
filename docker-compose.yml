@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  image-optimizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BASE_PATH=/
+    container_name: image-optimizer
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BASE_PATH=/
+    volumes:
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+

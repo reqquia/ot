@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Otimizador de Imagens</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+
+    .upload-area {
+      border: 3px dashed #667eea;
+      border-radius: 15px;
+      padding: 60px 20px;
+      text-align: center;
+      background: #f8f9ff;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 30px;
+    }
+
+    .upload-area:hover {
+      border-color: #764ba2;
+      background: #f0f2ff;
+    }
+
+    .upload-area.dragover {
+      border-color: #764ba2;
+      background: #e8ebff;
+      transform: scale(1.02);
+    }
+
+    .upload-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+
+    .upload-text {
+      font-size: 1.2em;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .upload-hint {
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .file-list {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .file-name {
+      flex: 1;
+      color: #333;
+      font-size: 0.9em;
+    }
+
+    .file-size {
+      color: #666;
+      font-size: 0.85em;
+      margin-right: 10px;
+    }
+
+    .remove-file {
+      background: #ff4757;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+
+    .remove-file:hover {
+      background: #ff3838;
+    }
+
+    .options {
+      margin-bottom: 30px;
+    }
+
+    .option-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .quality-value {
+      text-align: center;
+      font-size: 1.2em;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      margin-top: 20px;
+    }
+
+    .button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .progress {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .progress.active {
+      display: block;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #f0f0f0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .status {
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .success.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🖼️ Otimizador de Imagens</h1>
+    <p class="subtitle">Converta PNG, JPEG e JPG para WebP com qualidade otimizada</p>
+
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📤</div>
+      <div class="upload-text">Arraste suas imagens aqui</div>
+      <div class="upload-hint">ou clique para selecionar arquivos</div>
+      <input type="file" id="fileInput" multiple accept="image/png,image/jpeg,image/jpg,image/webp">
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+
+    <div class="options">
+      <div class="option-group">
+        <label for="quality">Qualidade: <span class="quality-value" id="qualityValue">75</span>%</label>
+        <input type="range" id="quality" min="0" max="100" value="75">
+      </div>
+
+      <div class="option-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="keepOriginal">
+          <label for="keepOriginal" style="margin: 0;">Manter arquivos originais (não aplicável no download ZIP)</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="button" id="optimizeBtn" disabled>Otimizar e Baixar ZIP</button>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill">0%</div>
+      </div>
+      <div class="status" id="status">Processando...</div>
+    </div>
+
+    <div class="error" id="error"></div>
+    <div class="success" id="success"></div>
+  </div>
+
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const optimizeBtn = document.getElementById('optimizeBtn');
+    const qualitySlider = document.getElementById('quality');
+    const qualityValue = document.getElementById('qualityValue');
+    const progress = document.getElementById('progress');
+    const progressFill = document.getElementById('progressFill');
+    const status = document.getElementById('status');
+    const errorDiv = document.getElementById('error');
+    const successDiv = document.getElementById('success');
+
+    let selectedFiles = [];
+
+    // Atualiza valor da qualidade
+    qualitySlider.addEventListener('input', (e) => {
+      qualityValue.textContent = e.target.value;
+    });
+
+    // Upload area click
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      const validFiles = Array.from(files).filter(file => {
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        return validTypes.includes(file.type);
+      });
+
+      selectedFiles = [...selectedFiles, ...validFiles];
+      updateFileList();
+      updateButtonState();
+    }
+
+    function updateFileList() {
+      fileList.innerHTML = '';
+      selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${formatBytes(file.size)}</span>
+          <button class="remove-file" onclick="removeFile(${index})">Remover</button>
+        `;
+        fileList.appendChild(fileItem);
+      });
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updateFileList();
+      updateButtonState();
+    }
+
+    function updateButtonState() {
+      optimizeBtn.disabled = selectedFiles.length === 0;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Otimizar e baixar
+    optimizeBtn.addEventListener('click', async () => {
+      if (selectedFiles.length === 0) return;
+
+      const formData = new FormData();
+      selectedFiles.forEach(file => {
+        formData.append('images', file);
+      });
+      formData.append('quality', qualitySlider.value);
+      formData.append('keepOriginal', document.getElementById('keepOriginal').checked);
+
+      // UI updates
+      optimizeBtn.disabled = true;
+      progress.classList.add('active');
+      errorDiv.classList.remove('show');
+      successDiv.classList.remove('show');
+      status.textContent = 'Enviando e processando imagens...';
+      progressFill.style.width = '30%';
+      progressFill.textContent = '30%';
+
+      try {
+        const response = await fetch('/optimize', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          let errorMessage = 'Erro ao processar imagens';
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const error = await response.json();
+              errorMessage = error.error || error.message || errorMessage;
+            } else {
+              const text = await response.text();
+              errorMessage = text || errorMessage;
+            }
+          } catch (parseError) {
+            errorMessage = `Erro ${response.status}: ${response.statusText || errorMessage}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        progressFill.style.width = '90%';
+        progressFill.textContent = '90%';
+        status.textContent = 'Criando arquivo ZIP...';
+
+        // Download do ZIP
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `imagens-otimizadas-${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        progressFill.style.width = '100%';
+        progressFill.textContent = '100%';
+        status.textContent = 'Download concluído!';
+        successDiv.textContent = `✅ ${selectedFiles.length} imagem(ns) otimizada(s) e baixada(s) com sucesso!`;
+        successDiv.classList.add('show');
+
+        // Reset após 3 segundos
+        setTimeout(() => {
+          selectedFiles = [];
+          updateFileList();
+          updateButtonState();
+          progress.classList.remove('active');
+          successDiv.classList.remove('show');
+        }, 3000);
+
+      } catch (error) {
+        errorDiv.textContent = `❌ Erro: ${error.message}`;
+        errorDiv.classList.add('show');
+        progress.classList.remove('active');
+      } finally {
+        optimizeBtn.disabled = false;
+      }
+    });
+
+    // Expor função globalmente para o onclick
+    window.removeFile = removeFile;
+  </script>
+</body>
+</html>
+
