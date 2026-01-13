@@ -1,9 +1,37 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { IncomingForm } from 'formidable';
-import { promises as fs } from 'fs';
-import path from 'path';
-import archiver from 'archiver';
-import { optimizeImage, type OptimizeResult } from './optimizer.js';
+
+// Imports com tratamento de erro
+let IncomingForm: any;
+let fs: any;
+let path: any;
+let archiver: any;
+let optimizeImage: any;
+
+// Função para inicializar módulos
+async function initializeModules() {
+  try {
+    if (!IncomingForm) {
+      IncomingForm = (await import('formidable')).IncomingForm;
+    }
+    if (!fs) {
+      fs = (await import('fs')).promises;
+    }
+    if (!path) {
+      path = await import('path');
+    }
+    if (!archiver) {
+      archiver = (await import('archiver')).default;
+    }
+    if (!optimizeImage) {
+      const optimizer = await import('./optimizer.js');
+      optimizeImage = optimizer.optimizeImage;
+    }
+    return true;
+  } catch (error) {
+    console.error('Erro ao inicializar módulos:', error);
+    return false;
+  }
+}
 
 // Configuração para Vercel (usar /tmp para arquivos temporários)
 const tempDir = '/tmp/optimize';
@@ -15,21 +43,30 @@ export const config = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Configuração CORS primeiro
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Inicializa módulos
+  const modulesInitialized = await initializeModules();
+  if (!modulesInitialized) {
+    return res.status(500).json({
+      error: 'Erro ao inicializar módulos',
+      message: 'Não foi possível carregar as dependências necessárias',
+    });
+  }
+
   try {
-    // Configuração CORS primeiro
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-
     console.log('API optimize chamada:', req.method, req.url);
     // Cria diretório temporário
     await fs.mkdir(tempDir, { recursive: true });
@@ -61,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Processa todas as imagens
-    const results: OptimizeResult[] = [];
+    const results: any[] = [];
     const optimizedFiles: string[] = [];
 
     for (const file of fileArray) {

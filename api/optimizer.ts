@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -19,6 +18,21 @@ export interface OptimizeResult {
   error?: string;
 }
 
+// Cache para o módulo sharp (lazy loading)
+let sharpModule: any = null;
+
+async function getSharp() {
+  if (!sharpModule) {
+    try {
+      sharpModule = (await import('sharp')).default;
+    } catch (error) {
+      console.error('Erro ao importar sharp:', error);
+      throw new Error('Sharp não pôde ser carregado. Verifique se está instalado corretamente.');
+    }
+  }
+  return sharpModule;
+}
+
 /**
  * Otimiza uma única imagem convertendo para WebP
  */
@@ -34,6 +48,9 @@ export async function optimizeImage(
   } = options;
 
   try {
+    // Importa sharp de forma lazy
+    const sharp = await getSharp();
+
     // Verifica se o arquivo existe
     await fs.access(inputPath);
 
