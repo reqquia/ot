@@ -20,7 +20,21 @@ export const config = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('API optimize chamada:', req.method, req.url);
+  
+  // Configuração CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log('OPTIONS request recebida');
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
+    console.log('Método não permitido:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
