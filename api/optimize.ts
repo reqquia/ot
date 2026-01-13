@@ -15,21 +15,21 @@ export const config = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Configuração CORS primeiro
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    // Configuração CORS primeiro
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
     console.log('API optimize chamada:', req.method, req.url);
     // Cria diretório temporário
     await fs.mkdir(tempDir, { recursive: true });
@@ -162,9 +162,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.send(zipBuffer);
   } catch (error) {
     console.error('Erro ao processar imagens:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    // Log detalhado para debug
+    console.error('Detalhes do erro:', {
+      message: errorMessage,
+      stack: errorStack,
+      name: error instanceof Error ? error.name : 'Unknown',
+    });
+    
     return res.status(500).json({
       error: 'Erro ao processar imagens',
-      message: error instanceof Error ? error.message : 'Erro desconhecido',
+      message: errorMessage,
+      ...(process.env.NODE_ENV === 'development' && { stack: errorStack }),
     });
   }
 }

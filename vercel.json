@@ -8,6 +8,9 @@
   "functions": {
     "api/optimize.ts": {
       "maxDuration": 60
+    },
+    "api/test.ts": {
+      "maxDuration": 10
     }
   }
 }
